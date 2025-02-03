@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Superhero Search Rescue Mission</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
+        }
+        .game-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .hero-card {
+            padding: 20px;
+            border: 2px solid #2196F3;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .search-interface {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .location-box {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .active-search {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <h1>🦸 Superhero Search Academy</h1>
+    
+    <div class="game-container">
+        <!-- Main Game Area -->
+        <div class="search-interface">
+            <div id="missionBriefing">
+                <h2>Choose Your Search Strategy:</h2>
+                <button onclick="startGame('linear')">Linear Search Mission</button>
+                <button onclick="startGame('binary')">Binary Search Mission</button>
+            </div>
+
+            <div id="heroSelection" style="display: none;">
+                <h2>🦸 Choose Your Hero</h2>
+                <div class="hero-grid" id="heroGrid"></div>
+            </div>
+
+            <div id="gameArea" style="display: none;">
+                <h2 id="missionTitle"></h2>
+                <div id="locations" class="locations-container"></div>
+                <div id="searchStatus"></div>
+            </div>
+        </div>
+
+        <!-- Educational Panel -->
+        <div class="search-interface">
+            <div id="algorithmExplanation">
+                <h2>📚 Algorithm Overview</h2>
+                <div id="currentExplanation"></div>
+                <h3>Complexity Analysis</h3>
+                <div id="complexityInfo"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const locations = [
+            "Albert Dock", "Anfield Stadium", "Cavern Club",
+            "Liverpool Cathedral", "Sefton Park", "St. George's Hall",
+            "Walker Art Gallery"
+        ].sort();
+
+        const superheroes = [
+            "Iron Man", "Spider-Man", "Hulk", 
+            "Black Panther", "Thor", "Captain Marvel"
+        ];
+
+        let currentSearchType = '';
+        let selectedHero = '';
+        let civilianLocation = '';
+        let currentStep = 0;
+
+        function startGame(searchType) {
+            currentSearchType = searchType;
+            document.getElementById('missionBriefing').style.display = 'none';
+            document.getElementById('heroSelection').style.display = 'block';
+            initializeHeroSelection();
+            updateExplanation();
+        }
+
+        function initializeHeroSelection() {
+            const grid = document.getElementById('heroGrid');
+            grid.innerHTML = '';
+            superheroes.forEach(hero => {
+                const card = document.createElement('div');
+                card.className = 'hero-card';
+                card.innerHTML = `
+                    <h3>${hero}</h3>
+                    <p>Click to select</p>
+                `;
+                card.onclick = () => selectHero(hero);
+                grid.appendChild(card);
+            });
+        }
+
+        function selectHero(hero) {
+            selectedHero = hero;
+            document.getElementById('heroSelection').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            civilianLocation = locations[Math.floor(Math.random() * locations.length)];
+            initializeSearch();
+        }
+
+        function initializeSearch() {
+            const sortedLocations = currentSearchType === 'binary' ? 
+                [...locations].sort() : 
+                [...locations].sort(() => Math.random() - 0.5);
+
+            document.getElementById('missionTitle').innerHTML = `
+                ${currentSearchType === 'binary' ? '🔍 Binary Search Mission' : '🐢 Linear Search Mission'}
+                <h3>${selectedHero}'s Mission: Find the civilian at ${civilianLocation}</h3>
+            `;
+
+            const locationsContainer = document.getElementById('locations');
+            locationsContainer.innerHTML = sortedLocations.map(loc => `
+                <div class="location-box" id="loc-${loc}">${loc}</div>
+            `).join('');
+
+            currentSearchType === 'binary' ? startBinarySearch() : startLinearSearch();
+        }
+
+        function startLinearSearch() {
+            const locations = document.querySelectorAll('.location-box');
+            let currentIndex = 0;
+
+            const searchInterval = setInterval(() => {
+                if(currentIndex >= locations.length) {
+                    showResult(false);
+                    clearInterval(searchInterval);
+                    return;
+                }
+
+                locations.forEach(loc => loc.classList.remove('active-search'));
+                locations[currentIndex].classList.add('active-search');
+
+                document.getElementById('searchStatus').innerHTML = `
+                    <p>Step ${currentIndex + 1}: Checking ${locations[currentIndex].textContent}</p>
+                    ${locations[currentIndex].textContent === civilianLocation ? 
+                        '🎉 Civilian found!' : '❌ Not here...'}
+                `;
+
+                if(locations[currentIndex].textContent === civilianLocation) {
+                    showResult(true, currentIndex + 1);
+                    clearInterval(searchInterval);
+                }
+                currentIndex++;
+            }, 1500);
+        }
+
+        function startBinarySearch() {
+            const sortedLocations = [...locations].sort();
+            let left = 0;
+            let right = sortedLocations.length - 1;
+            let steps = 0;
+
+            const searchInterval = setInterval(() => {
+                if(left > right) {
+                    showResult(false);
+                    clearInterval(searchInterval);
+                    return;
+                }
+
+                steps++;
+                const mid = Math.floor((left + right) / 2);
+                const currentLoc = sortedLocations[mid];
+                
+                document.querySelectorAll('.location-box').forEach(loc => 
+                    loc.classList.remove('active-search'));
+                document.getElementById(`loc-${currentLoc}`).classList.add('active-search');
+
+                document.getElementById('searchStatus').innerHTML = `
+                    <p>Step ${steps}: Checking midpoint ${currentLoc}</p>
+                    ${currentLoc === civilianLocation ? '🎉 Civilian found!' :
+                    currentLoc < civilianLocation ? '➡️ Searching right half' : '⬅️ Searching left half'}
+                `;
+
+                if(currentLoc === civilianLocation) {
+                    showResult(true, steps);
+                    clearInterval(searchInterval);
+                } else if(currentLoc < civilianLocation) {
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                }
+            }, 2000);
+        }
+
+        function updateExplanation() {
+            const explanation = currentSearchType === 'binary' ? `
+                <h3>Binary Search Strategy</h3>
+                <p>1. Requires sorted list<br>
+                2. Always checks middle element<br>
+                3. Eliminates half the remaining elements each step</p>
+            ` : `
+                <h3>Linear Search Strategy</h3>
+                <p>1. Works on any list<br>
+                2. Checks elements one by one<br>
+                3. Simple but slower for large datasets</p>
+            `;
+
+            document.getElementById('currentExplanation').innerHTML = explanation;
+            document.getElementById('complexityInfo').innerHTML = `
+                Time Complexity: ${currentSearchType === 'binary' ? 'O(log n)' : 'O(n)'}
+            `;
+        }
+
+        function showResult(success, steps) {
+            const resultHTML = success ? `
+                <div style="background: #d4edda; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                    <h3>🎉 Mission Successful!</h3>
+                    <p>${selectedHero} found the civilian in ${steps} steps!</p>
+                    <p>Total locations searched: ${currentSearchType === 'binary' ? Math.log2(locations.length).toFixed(1) : locations.length}</p>
+                    <button onclick="location.reload()">Try Again</button>
+                </div>
+            ` : `
+                <div style="background: #f8d7da; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                    <h3>❌ Mission Failed</h3>
+                    <p>The civilian couldn't be found</p>
+                    <button onclick="location.reload()">Try Again</button>
+                </div>
+            `;
+
+            document.getElementById('searchStatus').innerHTML += resultHTML;
+        }
+    </script>
+</body>
+</html>
